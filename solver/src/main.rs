@@ -1,13 +1,18 @@
 mod consts;
 mod judge;
-mod solver;
+mod naive_local;
+#[cfg(feature = "naive_manhattan")]
+mod naive_manhattan;
+mod utils;
 
 use judge::OuterJudge;
-use solver::NaiveManhattan;
+use naive_local::NaiveLocalSolver;
+#[cfg(feature = "naive_manhattan")]
+use naive_manhattan::NaiveManhattan;
 
 fn main() {
     let mut judge = OuterJudge;
-    let solver = NaiveManhattan;
+    let mut solver = NaiveLocalSolver::new();
     for _ in 0..crate::consts::Q {
         solver.solve(&mut judge);
     }
