@@ -47,5 +47,11 @@ whiteread = "=0.5.0"
 rustc-hash = "=1.1.0"
 smallvec = "=1.2.0"
 
+tools = { path = "../tools", optional = true }
+
 [features]
+default = [
+    "internal_tester",
+]
 naive_manhattan = []
+internal_tester = ["tools"]
