@@ -45,7 +45,7 @@ impl NaiveLocalSolver {
         }
     }
 
-    fn calc_path(&self, start: (usize, usize), end: (usize, usize)) -> Vec<Direction> {
+    fn calc_path(&self, start: (usize, usize), end: (usize, usize)) -> (f64, Vec<Direction>) {
         let mut heap = BinaryHeap::with_capacity(10);
         heap.push(State {
             dist: 0.0,
@@ -55,7 +55,7 @@ impl NaiveLocalSolver {
         let mut visited = [[1e100; N]; N];
         while let Some(state) = heap.pop() {
             if state.pos == end {
-                return state.path;
+                return (state.dist, state.path);
             }
             let (y, x) = state.pos;
 
@@ -100,31 +100,35 @@ impl NaiveLocalSolver {
 
     pub fn solve<J: Judge>(&mut self, judge: &mut J) {
         let query = judge.next_query();
-        let path = self.calc_path((query[0], query[1]), (query[2], query[3]));
+        let (dist, path) = self.calc_path((query[0], query[1]), (query[2], query[3]));
         judge.answer(&dir_to_str(&path));
-        let length = judge.path_length() as f64;
-        let avg = length / path.len() as f64;
+        let avg = judge.path_length() as f64 / dist;
         let mut y = query[0];
         let mut x = query[1];
+        let p = 0.8;
         for d in path {
             match d {
                 Direction::U => {
                     y -= 1;
-                    self.vertical[y][x] = (self.vertical[y][x] + avg) * 0.5;
+                    self.vertical[y][x] = mix(p, self.vertical[y][x], self.vertical[y][x] * avg);
                 }
                 Direction::D => {
-                    self.vertical[y][x] = (self.vertical[y][x] + avg) * 0.5;
+                    self.vertical[y][x] = mix(p, self.vertical[y][x], self.vertical[y][x] * avg);
                     y += 1;
                 }
                 Direction::L => {
                     x -= 1;
-                    self.horizon[y][x] = (self.horizon[y][x] + avg) * 0.5;
+                    self.horizon[y][x] = mix(p, self.horizon[y][x], self.horizon[y][x] * avg);
                 }
                 Direction::R => {
-                    self.horizon[y][x] = (self.horizon[y][x] + avg) * 0.5;
+                    self.horizon[y][x] = mix(p, self.horizon[y][x], self.horizon[y][x] * avg);
                     x += 1;
                 }
             }
         }
     }
+}
+
+fn mix(p: f64, a: f64, b: f64) -> f64 {
+    a * (1.0 - p) + b * p
 }
