@@ -54,4 +54,5 @@ default = [
     "internal_tester",
 ]
 naive_manhattan = []
+naive_local = []
 internal_tester = ["tools"]

@@ -1,39 +1,21 @@
-use std::collections::BinaryHeap;
-
 use crate::consts::N;
 use crate::judge::Judge;
-use crate::utils::{dir_to_str, Direction};
+use crate::utils::{calc_path, dir_to_str, Direction, EdgeCost};
 
 pub struct NaiveLocalSolver {
     vertical: [[f64; N]; N - 1],
     horizon: [[f64; N - 1]; N],
 }
 
-#[derive(Debug)]
-struct State {
-    dist: f64,
-    pos: (usize, usize),
-    path: Vec<Direction>,
-}
-
-impl PartialEq for State {
-    fn eq(&self, other: &State) -> bool {
-        self.dist == other.dist
+impl EdgeCost for NaiveLocalSolver {
+    #[inline]
+    fn vertical(&self, y: usize, x: usize) -> f64 {
+        self.vertical[y][x]
     }
-}
 
-impl Eq for State {}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &State) -> Option<std::cmp::Ordering> {
-        // flip for BinaryHeap
-        other.dist.partial_cmp(&self.dist)
-    }
-}
-
-impl Ord for State {
-    fn cmp(&self, other: &State) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap()
+    #[inline]
+    fn horizon(&self, y: usize, x: usize) -> f64 {
+        self.horizon[y][x]
     }
 }
 
@@ -45,62 +27,9 @@ impl NaiveLocalSolver {
         }
     }
 
-    fn calc_path(&self, start: (usize, usize), end: (usize, usize)) -> (f64, Vec<Direction>) {
-        let mut heap = BinaryHeap::with_capacity(10);
-        heap.push(State {
-            dist: 0.0,
-            pos: start,
-            path: Vec::new(),
-        });
-        let mut visited = [[1e300; N]; N];
-        while let Some(state) = heap.pop() {
-            if state.pos == end {
-                return (state.dist, state.path);
-            }
-            let (y, x) = state.pos;
-
-            let mut push = |y: usize, x: usize, dist, path: &[Direction], dir| {
-                if dist < visited[y][x] {
-                    visited[y][x] = dist;
-                    let mut path = path.to_vec();
-                    path.push(dir);
-                    heap.push(State {
-                        dist,
-                        pos: (y, x),
-                        path,
-                    });
-                }
-            };
-
-            // up
-            if 0 < y {
-                let y = y - 1;
-                let dist = state.dist + self.vertical[y][x];
-                push(y, x, dist, &state.path, Direction::U);
-            }
-            // down
-            if y + 1 < N {
-                let dist = state.dist + self.vertical[y][x];
-                push(y + 1, x, dist, &state.path, Direction::D);
-            }
-            // left
-            if 0 < x {
-                let x = x - 1;
-                let dist = state.dist + self.horizon[y][x];
-                push(y, x, dist, &state.path, Direction::L);
-            }
-            // right
-            if x + 1 < N {
-                let dist = state.dist + self.horizon[y][x];
-                push(y, x + 1, dist, &state.path, Direction::R);
-            }
-        }
-        unreachable!()
-    }
-
     pub fn solve<J: Judge>(&mut self, judge: &mut J) {
         let query = judge.next_query();
-        let (dist, path) = self.calc_path((query[0], query[1]), (query[2], query[3]));
+        let (dist, path) = calc_path(self, (query[0], query[1]), (query[2], query[3]));
         judge.answer(&dir_to_str(&path));
         let length = judge.path_length() as f64;
 
